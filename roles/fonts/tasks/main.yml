@@ -13,17 +13,30 @@
           - unzip
         state: present
 
-    - name: Install fonts from Fedora repositories
+    - name: Install Roboto fonts from Fedora repositories
       ansible.builtin.dnf:
         name:
           - google-roboto-fonts
-          - ibm-plex-fonts
-          - inter-fonts
         state: present
-      failed_when:
-        - fonts_install.rc != 0
-        - "'is already installed' not in fonts_install.stderr"
       register: fonts_install
+
+    - name: Install IBM Plex Mono fonts from repositories
+      ansible.builtin.dnf:
+        name: ibm-plex-mono-fonts
+        state: present
+      register: fonts_plex
+      failed_when:
+        - fonts_plex.rc != 0
+        - "'No package' not in (fonts_plex.results | join(''))"
+
+    - name: Install Google Noto fonts from repositories
+      ansible.builtin.dnf:
+        name: google-noto-sans-fonts
+        state: present
+      register: fonts_noto
+      failed_when:
+        - fonts_noto.rc != 0
+        - "'No package' not in (fonts_noto.results | join(''))"
 
     - name: Create fonts directory
       ansible.builtin.file:

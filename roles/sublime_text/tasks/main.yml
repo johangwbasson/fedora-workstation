@@ -1,0 +1,24 @@
+---
+- name: Install Sublime Text
+  tags:
+    - sublime_text
+  block:
+    - name: Add Sublime Text repository key
+      ansible.builtin.rpm_key:
+        key: https://download.sublimetext.com/sublimehq-rpm-pub.gpg
+        state: present
+
+    - name: Add Sublime Text repository
+      ansible.builtin.yum_repository:
+        name: sublime-text
+        description: Sublime Text Repository
+        baseurl: https://download.sublimetext.com/rpm/stable/x86_64/
+        enabled: true
+        gpgcheck: true
+        gpgkey: https://download.sublimetext.com/sublimehq-rpm-pub.gpg
+        state: present
+
+    - name: Install Sublime Text package
+      ansible.builtin.dnf:
+        name: sublime-text
+        state: present

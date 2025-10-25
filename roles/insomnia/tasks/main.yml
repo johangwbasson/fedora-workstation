@@ -1,0 +1,14 @@
+---
+- name: Install Insomnia
+  tags:
+    - insomnia
+  block:
+    - name: Install insomnia from flathub
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak install -y flathub rest.insomnia.Insomnia
+      register: insomnia_install
+      changed_when: "'already installed' not in insomnia_install.stderr and 'is already installed' not in insomnia_install.stderr"
+      failed_when:
+        - insomnia_install.rc != 0
+        - "'already installed' not in insomnia_install.stderr"
+        - "'is already installed' not in insomnia_install.stderr"

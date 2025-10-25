@@ -1,0 +1,28 @@
+---
+- name: Install Lazygit
+  tags:
+    - lazygit
+  block:
+    - name: Install go (dependency)
+      ansible.builtin.dnf:
+        name: golang
+        state: present
+
+    - name: Check if lazygit is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/lazygit
+      register: lazygit_binary
+
+    - name: Install lazygit
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+')
+          curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+          tar xf lazygit.tar.gz lazygit
+          mv lazygit /usr/local/bin
+          rm lazygit.tar.gz
+          echo "installed"
+      register: lazygit_install
+      changed_when: "'installed' in lazygit_install.stdout"
+      become: true
+      when: not lazygit_binary.stat.exists

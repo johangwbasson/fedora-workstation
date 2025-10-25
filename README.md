@@ -1,6 +1,6 @@
 # Fedora 42 KDE Provisioning Playbook
 
-Ansible playbook to provision a Fedora 42 KDE machine with base system configuration and repository setup.
+Comprehensive Ansible playbook to provision a Fedora 42 KDE machine with complete system configuration, development tools, applications, and shell environments.
 
 ## Project Structure
 
@@ -27,10 +27,24 @@ Ansible playbook to provision a Fedora 42 KDE machine with base system configura
 
 Based on CLAUDE.md best practices:
 
-- **Idempotent**: All roles are designed to be safely run multiple times
+- **Idempotent**: All 30 roles are designed to be safely run multiple times without side effects
 - **Single Responsibility**: Each role has a focused, well-defined purpose
 - **Self-contained**: Extra files and configurations are kept within the role
 - **Linted**: Playbooks are validated with ansible-lint before execution
+- **Comprehensive**: Covers complete system provisioning from base configuration to development tools and applications
+- **Error Handling**: Proper failed_when and changed_when conditions throughout all tasks
+- **Guards**: Stat checks and when conditions prevent redundant operations
+
+## Key Features
+
+- **Multi-Source Package Management**: DNF, Flatpak, Yum Repository, Shell scripts
+- **Conflict Resolution**: MEGASync via Flathub to avoid FFmpeg library conflicts
+- **Shell Configuration**: Fish shell with NVM/Tide and Zsh with Oh My Zsh/Powerlevel10k
+- **Development Tools**: Docker, Neovim, VS Code, LazyVim, LazyDocker, LazyGit
+- **Security**: ClamAV antivirus, 1Password, Bitwarden, CleanBrowsing DNS
+- **Desktop Applications**: Complete browser set, multimedia, office, and productivity tools
+- **SSD Optimization**: Btrfs tuning for modern SSDs
+- **System Hardening**: DNS filtering, antivirus scanning
 
 ## Prerequisites
 
@@ -69,20 +83,63 @@ This will:
 
 ## Available Roles
 
-### base
+The playbook includes **30 roles** organized into categories:
 
-Installs and configures base system components:
+### System Configuration (6 roles)
+- **base**: Core system setup (RPM Fusion repos, DNF config)
+- **hostname**: Set system hostname
+- **fonts**: Install system fonts (Fira Sans, JetBrains Mono)
+- **btrfs_ssd**: Optimize Btrfs for SSD performance
+- **clamav**: Install ClamAV antivirus with auto-update
+- **cleanbrowsing_dns**: Configure CleanBrowsing DNS (Adult Filter)
 
-- RPM Fusion Free repository
-- RPM Fusion Nonfree repository
-- DNF fastest mirror configuration
+### Development & CLI Tools (7 roles)
+- **clitools**: Essential CLI tools (git, curl, wget, htop, fd-find, ripgrep, fzf, bat, etc.)
+- **git**: Configure Git with user settings
+- **docker**: Install Docker with user group access
+- **lazydocker**: Docker TUI management tool
+- **lazygit**: Git TUI management tool
+- **lazyvim**: Neovim configuration with LazyVim starter
+- **vscode**: Visual Studio Code editor
 
-**Tags**: `base`
+### Shell Environments (2 roles)
+- **fish**: Fish shell with Oh My Fish, NVM plugin, Tide prompt
+- **zsh**: Zsh shell with Oh My Zsh, Powerlevel10k, plugins
 
-Run only the base role:
+### Browsers (3 roles)
+- **brave**: Brave browser
+- **chrome**: Google Chrome browser
+- **chromium**: Chromium browser
+
+### GUI Applications (12 roles)
+- **insomnia**: REST API client (via Flathub)
+- **obsidian**: Markdown note-taking app (via Flathub)
+- **slack**: Slack messaging client (via Flathub)
+- **onlyoffice**: Office suite (via Flathub)
+- **postman**: API testing tool (via Flathub)
+- **spotify**: Spotify music client (via Flathub)
+- **sublime_text**: Text editor
+- **bitwarden**: Password manager (via Flathub)
+- **megasync**: MEGA cloud storage (via Flathub)
+- **onepassword**: Password manager
+- **multimedia_codecs**: GStreamer, VLC, multimedia libraries
+
+### System Services (1 role)
+- **flatpak**: Flatpak runtime and Flathub repository
+
+### Run Specific Roles
+
+Run only tagged roles using the `-t` flag:
 
 ```bash
-ansible-playbook -i inventory.ini playbooks/main.yml -t base -v
+# Run single role
+ansible-playbook -i inventory.ini playbooks/main.yml -t fish -v
+
+# Run multiple roles
+ansible-playbook -i inventory.ini playbooks/main.yml -t docker,vscode -v
+
+# Run all roles
+./run.sh
 ```
 
 ## Manual Commands

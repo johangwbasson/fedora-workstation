@@ -1,0 +1,23 @@
+---
+- name: Install Lazydocker
+  tags:
+    - lazydocker
+  block:
+    - name: Install curl (dependency)
+      ansible.builtin.dnf:
+        name: curl
+        state: present
+
+    - name: Check if lazydocker is already installed
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.local/bin/lazydocker
+      register: lazydocker_binary
+
+    - name: Install lazydocker
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe command-instead-of-module[curl]
+        cmd: curl https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install.sh | bash
+      become: true
+      become_user: "{{ username }}"
+      register: lazydocker_install
+      changed_when: lazydocker_install.rc == 0
+      when: not lazydocker_binary.stat.exists

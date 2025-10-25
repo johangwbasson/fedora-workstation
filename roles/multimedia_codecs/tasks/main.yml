@@ -1,0 +1,36 @@
+---
+- name: Install Multimedia Codecs
+  tags:
+    - multimedia_codecs
+  block:
+    - name: Install GStreamer multimedia plugins
+      ansible.builtin.dnf:
+        name:
+          - gstreamer1-plugins-base
+          - gstreamer1-plugins-good
+          - gstreamer1-plugins-ugly
+          - gstreamer1-plugins-bad-free
+          - gstreamer1-plugins-bad-free-extras
+          - gstreamer1-plugins-base-tools
+        state: present
+
+    - name: Install VLC and additional codecs
+      ansible.builtin.dnf:
+        name:
+          - vlc
+          - libva
+          - libva-utils
+        state: present
+
+    - name: Install intel-media-driver (optional)
+      ansible.builtin.dnf:
+        name: intel-media-driver
+        state: present
+      failed_when:
+        - intel_media.rc != 0
+        - "'No package' not in intel_media.stdout"
+      register: intel_media
+
+    - name: Display multimedia codecs installation status
+      ansible.builtin.debug:
+        msg: "Multimedia codecs installed. FFmpeg will be installed as a dependency by other packages if needed."

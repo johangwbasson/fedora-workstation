@@ -8,8 +8,8 @@ exclude_paths:
   - node_modules
 
 # Rules to skip (commented rules are enabled by default)
-# skip_list:
-#   - line-too-long
+skip_list:
+  - command-instead-of-module  # curl commands are appropriate for installation scripts
 
 # Verbosity level
 verbosity: 1

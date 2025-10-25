@@ -1,0 +1,101 @@
+---
+- name: Install Fish Shell with plugins
+  tags:
+    - fish
+  block:
+    - name: Install fish shell
+      ansible.builtin.dnf:
+        name: fish
+        state: present
+
+    - name: Create fish config directory for user
+      ansible.builtin.file:
+        path: /home/{{ username }}/.config/fish
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0755'
+
+    - name: Check if fisher/omf is installed
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.local/share/omf
+      register: omf_installed
+
+    - name: Install Oh My Fish (plugin manager)
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe command-instead-of-module[curl]
+        cmd: curl -fL https://get.oh-my.fish | bash
+      become: true
+      become_user: "{{ username }}"
+      register: omf_install
+      changed_when: "'already' not in omf_install.stderr and 'Already' not in omf_install.stdout"
+      failed_when:
+        - omf_install.rc != 0
+        - "'already' not in omf_install.stderr"
+        - "'Already' not in omf_install.stdout"
+      when: not omf_installed.stat.exists
+
+    - name: Wait for omf to be available
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.local/share/omf/bin/omf
+      register: omf_binary
+      until: omf_binary.stat.exists
+      retries: 3
+      delay: 2
+      when: not omf_installed.stat.exists
+
+    - name: Install nvm plugin
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: /home/{{ username }}/.local/share/omf/bin/omf install nvm --path=/home/{{ username }}/.local/share/omf/pkg/nvm
+      become: true
+      become_user: "{{ username }}"
+      register: nvm_plugin_install
+      changed_when: "'omf: Package' not in nvm_plugin_install.stdout"
+      failed_when:
+        - nvm_plugin_install.rc != 0
+        - "'already installed' not in nvm_plugin_install.stdout"
+
+    - name: Install tide prompt plugin
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: /home/{{ username }}/.local/share/omf/bin/omf install tide --path=/home/{{ username }}/.local/share/omf/pkg/tide
+      become: true
+      become_user: "{{ username }}"
+      register: tide_plugin_install
+      changed_when: "'omf: Package' not in tide_plugin_install.stdout"
+      failed_when:
+        - tide_plugin_install.rc != 0
+        - "'already installed' not in tide_plugin_install.stdout"
+
+    - name: Configure fish config.fish with nvm and other settings
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.config/fish/config.fish
+        line: "{{ item }}"
+        state: present
+        create: true
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0644'
+      loop:
+        - "# NVM Configuration"
+        - "set -gx NVM_DIR ~/.nvm"
+        - "set -gx NODE_VERSION_PREFIX v"
+        - "test -s $NVM_DIR/nvm.sh && source $NVM_DIR/nvm.sh"
+        - ""
+        - "# Tide Prompt"
+        - "set -g tide_prompt_icon_success '✔'"
+        - "set -g tide_prompt_icon_failure '✘'"
+
+    - name: Set fish as default shell
+      ansible.builtin.user:
+        name: "{{ username }}"
+        shell: /usr/bin/fish
+
+    - name: Display fish shell installation status
+      ansible.builtin.debug:
+        msg: |
+          Fish shell installed successfully with:
+          - Oh My Fish plugin manager
+          - NVM (Node Version Manager)
+          - Tide prompt
+
+          To use Node.js with nvm in fish, run: nvm install node
+          Current shell: /usr/bin/fish

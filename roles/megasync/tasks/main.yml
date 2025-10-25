@@ -1,0 +1,18 @@
+---
+- name: Install MEGASync
+  tags:
+    - megasync
+  block:
+    - name: Install MEGASync from Flathub
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak install -y flathub nz.mega.MEGAsync
+      register: megasync_install
+      changed_when: "'already installed' not in megasync_install.stderr and 'is already installed' not in megasync_install.stderr"
+      failed_when:
+        - megasync_install.rc != 0
+        - "'already installed' not in megasync_install.stderr"
+        - "'is already installed' not in megasync_install.stderr"
+
+    - name: Display MEGASync installation status
+      ansible.builtin.debug:
+        msg: "MEGASync installed from Flathub. Launch with: flatpak run nz.mega.MEGAsync"

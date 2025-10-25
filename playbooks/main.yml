@@ -50,3 +50,79 @@
     - role: chromium
       tags:
         - chromium
+
+    - role: insomnia
+      tags:
+        - insomnia
+
+    - role: multimedia_codecs
+      tags:
+        - multimedia_codecs
+
+    - role: megasync
+      tags:
+        - megasync
+
+    - role: obsidian
+      tags:
+        - obsidian
+
+    - role: onepassword
+      tags:
+        - onepassword
+
+    - role: slack
+      tags:
+        - slack
+
+    - role: onlyoffice
+      tags:
+        - onlyoffice
+
+    - role: postman
+      tags:
+        - postman
+
+    - role: spotify
+      tags:
+        - spotify
+
+    - role: sublime_text
+      tags:
+        - sublime_text
+
+    - role: vscode
+      tags:
+        - vscode
+
+    - role: fish
+      tags:
+        - fish
+
+    - role: zsh
+      tags:
+        - zsh
+
+    - role: lazydocker
+      tags:
+        - lazydocker
+
+    - role: lazygit
+      tags:
+        - lazygit
+
+    - role: lazyvim
+      tags:
+        - lazyvim
+
+    - role: clamav
+      tags:
+        - clamav
+
+    - role: btrfs_ssd
+      tags:
+        - btrfs_ssd
+
+    - role: cleanbrowsing_dns
+      tags:
+        - cleanbrowsing_dns

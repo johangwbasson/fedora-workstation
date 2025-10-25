@@ -1,0 +1,59 @@
+---
+- name: Install LazyVim
+  tags:
+    - lazyvim
+  block:
+    - name: Install neovim and dependencies
+      ansible.builtin.dnf:
+        name:
+          - neovim
+          - git
+          - nodejs
+          - npm
+          - python3-neovim
+          - ruby
+          - ruby-devel
+        state: present
+
+    - name: Backup existing nvim config if present
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: |
+          if [ -d /home/{{ username }}/.config/nvim ]; then
+            mv /home/{{ username }}/.config/nvim /home/{{ username }}/.config/nvim.bak.$(date +%s)
+            echo "backed_up"
+          else
+            echo "not_found"
+          fi
+      register: nvim_backup
+      changed_when: "'backed_up' in nvim_backup.stdout"
+
+    - name: Check if LazyVim is already installed
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.config/nvim
+      register: nvim_config_stat
+
+    - name: Install LazyVim configuration
+      ansible.builtin.shell:  # noqa: command-instead-of-shell command-instead-of-module
+        cmd: |
+          git clone https://github.com/LazyVim/starter /home/{{ username }}/.config/nvim
+          rm -rf /home/{{ username }}/.config/nvim/.git
+          chown -R {{ username }}:{{ username }} /home/{{ username }}/.config/nvim
+          echo "installed"
+      register: lazyvim_install
+      changed_when: "'installed' in lazyvim_install.stdout"
+      when: not nvim_config_stat.stat.exists
+
+    - name: Install vim-plug if not using packer
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe command-instead-of-module[curl]
+        cmd: |
+          if [ ! -f /home/{{ username }}/.local/share/nvim/site/autoload/plug.vim ]; then
+            mkdir -p /home/{{ username }}/.local/share/nvim/site/autoload
+            curl -fLo /home/{{ username }}/.local/share/nvim/site/autoload/plug.vim \
+              https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+            chown -R {{ username }}:{{ username }} /home/{{ username }}/.local/share/nvim
+            echo "installed"
+          else
+            echo "already_exists"
+          fi
+      register: vimplug_install
+      changed_when: "'installed' in vimplug_install.stdout"

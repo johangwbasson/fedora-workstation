@@ -1,0 +1,74 @@
+---
+- name: Configure CleanBrowsing DNS with Adult Filter
+  tags:
+    - cleanbrowsing_dns
+  block:
+    - name: Backup original resolv.conf
+      ansible.builtin.copy:
+        src: /etc/resolv.conf
+        dest: /etc/resolv.conf.bak
+        remote_src: true
+        mode: '0644'
+        backup: true
+
+    - name: Remove existing nameserver entries
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        regexp: '^nameserver'
+        state: absent
+
+    - name: Add CleanBrowsing Adult Filter DNS servers
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        line: "{{ item }}"
+        state: present
+      loop:
+        - "nameserver 185.228.168.9"
+        - "nameserver 185.228.169.9"
+        - "nameserver 2a0d:2a00:1::1"
+        - "nameserver 2a0d:2a00:1::2"
+
+    - name: Check if resolv.conf is immutable
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_stat
+
+    - name: Make resolv.conf immutable
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        attributes: '+i'
+      when: not resolv_stat.stat.attributes | regex_search('i')
+
+    - name: Configure NetworkManager to use systemd-resolved
+      ansible.builtin.lineinfile:
+        path: /etc/NetworkManager/NetworkManager.conf
+        regexp: '^dns='
+        line: 'dns=systemd-resolved'
+        state: present
+
+    - name: Configure systemd-resolved for CleanBrowsing
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: '^#?DNS='
+        line: 'DNS=185.228.168.9 185.228.169.9 2a0d:2a00:1::1 2a0d:2a00:1::2'
+        state: present
+      register: resolved_dns_update
+
+    - name: Configure systemd-resolved FallbackDNS
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: '^#?FallbackDNS='
+        line: 'FallbackDNS=1.1.1.1 1.0.0.1 2606:4700:4700::1111 2606:4700:4700::1001'
+        state: present
+      register: resolved_fallback_update
+
+    - name: Restart systemd-resolved service
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: restarted
+        daemon_reload: true
+      when: resolved_dns_update.changed or resolved_fallback_update.changed
+
+    - name: Display DNS configuration status
+      ansible.builtin.debug:
+        msg: "CleanBrowsing DNS (Adult Filter) configured: 185.228.168.9, 185.228.169.9, 2a0d:2a00:1::1, 2a0d:2a00:1::2"

@@ -1,0 +1,95 @@
+---
+- name: Install Zsh with Oh My Zsh and Powerlevel10k
+  tags:
+    - zsh
+  block:
+    - name: Install zsh and git (for oh-my-zsh)
+      ansible.builtin.dnf:
+        name:
+          - zsh
+          - git
+        state: present
+
+    - name: Install Oh My Zsh
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          if [ ! -d /home/{{ username }}/.oh-my-zsh ]; then
+            curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh -s -- --unattended
+            chown -R {{ username }}:{{ username }} /home/{{ username }}/.oh-my-zsh
+            echo "installed"
+          else
+            echo "already_exists"
+          fi
+      register: shell_omz_install
+      changed_when: "'installed' in shell_omz_install.stdout"
+
+    - name: Install Powerlevel10k theme
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          if [ ! -d /home/{{ username }}/.oh-my-zsh/custom/themes/powerlevel10k ]; then
+            git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \
+              /home/{{ username }}/.oh-my-zsh/custom/themes/powerlevel10k
+            chown -R {{ username }}:{{ username }} /home/{{ username }}/.oh-my-zsh/custom/themes/powerlevel10k
+            echo "installed"
+          else
+            echo "already_exists"
+          fi
+      register: shell_p10k_install
+      changed_when: "'installed' in shell_p10k_install.stdout"
+
+    - name: Install common zsh plugins
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: |
+          plugins_dir="/home/{{ username }}/.oh-my-zsh/custom/plugins"
+          mkdir -p "$plugins_dir"
+          changed=0
+
+          # fzf plugin
+          if [ ! -d "$plugins_dir/fzf" ]; then
+            git clone https://github.com/junegunn/fzf.git "$plugins_dir/fzf"
+            chown -R {{ username }}:{{ username }} "$plugins_dir/fzf"
+            changed=1
+          fi
+
+          # zsh-autosuggestions
+          if [ ! -d "$plugins_dir/zsh-autosuggestions" ]; then
+            git clone https://github.com/zsh-users/zsh-autosuggestions "$plugins_dir/zsh-autosuggestions"
+            chown -R {{ username }}:{{ username }} "$plugins_dir/zsh-autosuggestions"
+            changed=1
+          fi
+
+          # zsh-syntax-highlighting
+          if [ ! -d "$plugins_dir/zsh-syntax-highlighting" ]; then
+            git clone https://github.com/zsh-users/zsh-syntax-highlighting "$plugins_dir/zsh-syntax-highlighting"
+            chown -R {{ username }}:{{ username }} "$plugins_dir/zsh-syntax-highlighting"
+            changed=1
+          fi
+
+          if [ $changed -eq 1 ]; then
+            echo "changed"
+          else
+            echo "unchanged"
+          fi
+      register: shell_zsh_plugins
+      changed_when: "'changed' in shell_zsh_plugins.stdout"
+
+    - name: Update .zshrc to use Powerlevel10k theme and plugins
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.zshrc
+        regexp: "^ZSH_THEME="
+        line: 'ZSH_THEME="powerlevel10k/powerlevel10k"'
+      become: true
+      become_user: "{{ username }}"
+
+    - name: Update .zshrc with common plugins
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.zshrc
+        regexp: "^plugins="
+        line: 'plugins=(git gradle fzf zsh-autosuggestions zsh-syntax-highlighting)'
+      become: true
+      become_user: "{{ username }}"
+
+    - name: Set zsh as default shell
+      ansible.builtin.user:
+        name: "{{ username }}"
+        shell: /usr/bin/zsh

@@ -1,0 +1,14 @@
+---
+- name: Install Obsidian
+  tags:
+    - obsidian
+  block:
+    - name: Install obsidian from flathub
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak install -y flathub md.obsidian.Obsidian
+      register: obsidian_install
+      changed_when: "'already installed' not in obsidian_install.stderr and 'is already installed' not in obsidian_install.stderr"
+      failed_when:
+        - obsidian_install.rc != 0
+        - "'already installed' not in obsidian_install.stderr"
+        - "'is already installed' not in obsidian_install.stderr"

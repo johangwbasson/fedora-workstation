@@ -1,0 +1,43 @@
+---
+- name: Optimize Btrfs for SSD
+  tags:
+    - btrfs_ssd
+  block:
+    - name: Check if filesystem is btrfs
+      ansible.builtin.shell:  # noqa: command-instead-of-shell command-instead-of-module risky-shell-pipe
+        cmd: df / | grep -q btrfs && echo "btrfs" || echo "not_btrfs"
+      register: is_btrfs
+      changed_when: false
+
+    - name: Get current btrfs fstab entry
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: grep '/' /etc/fstab | grep btrfs | grep -v '#'
+      register: btrfs_fstab_entry
+      changed_when: false
+      when: is_btrfs.stdout == "btrfs"
+      failed_when: false
+
+    - name: Update fstab with optimized btrfs options
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^(UUID=[a-f0-9-]+\s+/\s+btrfs\s+)(.*)'
+        line: '\1defaults,discard=async,noatime,compress=zstd:1,ssd 0 0'
+        backrefs: true
+        backup: true
+      when: is_btrfs.stdout == "btrfs" and btrfs_fstab_entry.stdout != ""
+      register: fstab_update
+
+    - name: Display btrfs SSD optimization status
+      ansible.builtin.debug:
+        msg: "Btrfs SSD optimizations applied (async discard, noatime, zstd compression, ssd mode)"
+      when: is_btrfs.stdout == "btrfs" and fstab_update.changed
+
+    - name: Display btrfs already optimized
+      ansible.builtin.debug:
+        msg: "Btrfs SSD is already optimized"
+      when: is_btrfs.stdout == "btrfs" and not fstab_update.changed
+
+    - name: Display non-btrfs filesystem notice
+      ansible.builtin.debug:
+        msg: "Root filesystem is not btrfs, skipping btrfs optimizations"
+      when: is_btrfs.stdout != "btrfs"

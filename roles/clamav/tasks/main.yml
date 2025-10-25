@@ -1,0 +1,49 @@
+---
+- name: Install ClamAV with automatic database updates
+  tags:
+    - clamav
+  block:
+    - name: Install clamav and freshclam
+      ansible.builtin.dnf:
+        name:
+          - clamav
+          - clamav-update
+        state: present
+
+    - name: Check if ClamAV database was recently updated
+      ansible.builtin.stat:
+        path: /var/lib/clamav/main.cvd
+      register: clamav_db
+
+    - name: Update ClamAV virus database
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: freshclam
+      register: freshclam_update
+      changed_when: "'updated' in freshclam_update.stdout or 'Database updated' in freshclam_update.stdout or 'already up-to-date' in freshclam_update.stdout"
+      when: not clamav_db.stat.exists or (ansible_date_time.iso8601 | string) > ((clamav_db.stat.mtime + 86400) | string)
+
+    - name: Create sudoers entry for database update without password
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/clamav-update
+        line: "{{ username }} ALL=(ALL) NOPASSWD: /usr/bin/freshclam"
+        create: true
+        mode: '0440'
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Enable freshclam service for automatic updates
+      ansible.builtin.systemd:
+        name: clamav-freshclam
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Create cron job for daily ClamAV database updates
+      ansible.builtin.cron:
+        name: "Update ClamAV database daily"
+        special_time: daily
+        job: "/usr/bin/freshclam"
+        user: "{{ username }}"
+
+    - name: Display ClamAV installation status
+      ansible.builtin.debug:
+        msg: "ClamAV installed with automatic database updates enabled"

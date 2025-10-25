@@ -1,0 +1,24 @@
+---
+- name: Configure Git
+  block:
+    - name: Ensure git is installed
+      ansible.builtin.dnf:
+        name: git
+        state: present
+
+    - name: Deploy .gitconfig file
+      ansible.builtin.template:
+        src: gitconfig.j2
+        dest: "{{ user_home }}/.gitconfig"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0644'
+      notify: git config deployed
+
+    - name: Verify git configuration
+      ansible.builtin.command:
+        cmd: git config --global user.name
+      register: git_config_check
+      changed_when: false
+  tags:
+    - git

@@ -1,0 +1,43 @@
+---
+- name: Install RPM Fusion repositories
+  block:
+    - name: Install RPM Fusion Free repository
+      ansible.builtin.dnf:
+        name: "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm"
+        state: present
+        disable_gpg_check: no
+
+    - name: Install RPM Fusion Nonfree repository
+      ansible.builtin.dnf:
+        name: "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm"
+        state: present
+        disable_gpg_check: no
+
+    - name: Refresh dnf cache after repository installation
+      ansible.builtin.dnf:
+        update_cache: yes
+  tags:
+    - base
+
+- name: Configure DNF for fastest mirrors
+  block:
+    - name: Check if fastestmirror is already configured
+      ansible.builtin.lineinfile:
+        path: /etc/dnf/dnf.conf
+        regexp: '^fastestmirror\s*='
+        line: 'fastestmirror=True'
+        state: present
+      check_mode: yes
+      changed_when: false
+      register: fastestmirror_check
+
+    - name: Update dnf configuration for fastest mirrors
+      ansible.builtin.lineinfile:
+        path: /etc/dnf/dnf.conf
+        regexp: '^fastestmirror\s*='
+        line: 'fastestmirror=True'
+        state: present
+      when: fastestmirror_check.found == 0 or fastestmirror_check.diff.after != fastestmirror_check.diff.before
+      notify: refresh dnf cache
+  tags:
+    - base

@@ -1,0 +1,21 @@
+[user]
+	name = {{ git_name }}
+	email = {{ git_email }}
+
+[core]
+	editor = vim
+
+[init]
+	defaultBranch = main
+
+[color]
+	ui = auto
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	visual = log --graph --oneline --all

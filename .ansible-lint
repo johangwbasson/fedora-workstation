@@ -1,0 +1,21 @@
+---
+# Ansible-lint configuration
+
+# Exclude certain paths from linting
+exclude_paths:
+  - .git
+  - .github
+  - node_modules
+
+# Rules to follow
+rules:
+  fqcn-builtins:
+    # Use fully qualified collection names for all builtins
+    enabled: true
+  var-naming:
+    # Variable naming conventions
+    enabled: true
+    pattern: '^[a-z_][a-z0-9_]*$'
+
+# Verbosity level
+verbosity: 1

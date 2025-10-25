@@ -18,10 +18,10 @@
       ansible.builtin.command:  # noqa: command-instead-of-module
         cmd: flatpak remote-delete fedora
       register: flatpak_remove_fedora
-      changed_when: true
+      changed_when: "'Remote \"fedora\" not found' not in flatpak_remove_fedora.stderr"
       failed_when:
         - flatpak_remove_fedora.rc != 0
-        - "'does not exist' not in flatpak_remove_fedora.stderr"
+        - "'Remote \"fedora\" not found' not in flatpak_remove_fedora.stderr"
 
     - name: Update flatpak remotes
       ansible.builtin.command:  # noqa: command-instead-of-module

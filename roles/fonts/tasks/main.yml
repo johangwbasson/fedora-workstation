@@ -1,0 +1,79 @@
+---
+- name: Install System Fonts
+  tags:
+    - fonts
+  block:
+    - name: Install font dependencies
+      ansible.builtin.dnf:
+        name:
+          - curl
+          - cabextract
+          - xorg-x11-font-utils
+          - fontconfig
+          - unzip
+        state: present
+
+    - name: Install fonts from Fedora repositories
+      ansible.builtin.dnf:
+        name:
+          - google-roboto-fonts
+          - ibm-plex-fonts
+          - inter-fonts
+        state: present
+      failed_when:
+        - fonts_install.rc != 0
+        - "'is already installed' not in fonts_install.stderr"
+      register: fonts_install
+
+    - name: Create fonts directory
+      ansible.builtin.file:
+        path: /usr/share/fonts/opentype
+        state: directory
+        mode: '0755'
+
+    - name: Extract Fira Sans fonts
+      ansible.builtin.unarchive:
+        src: "{{ role_path }}/files/Fira_Sans.zip"
+        dest: /usr/share/fonts/opentype
+        creates: /usr/share/fonts/opentype/FiraSans-Regular.otf
+
+    - name: Extract JetBrains Mono fonts
+      ansible.builtin.unarchive:
+        src: "{{ role_path }}/files/JetBrainsMono.zip"
+        dest: /usr/share/fonts/opentype
+        creates: /usr/share/fonts/opentype/JetBrainsMono-Regular.ttf
+
+    - name: Install Microsoft core fonts dependencies
+      ansible.builtin.dnf:
+        name:
+          - curl
+          - cabextract
+          - xorg-x11-font-utils
+          - fontconfig
+        state: present
+
+    - name: Install Microsoft core fonts
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: rpm -i https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm
+      register: msfonts_install
+      changed_when: "'is already installed' not in msfonts_install.stderr"
+      failed_when:
+        - msfonts_install.rc != 0
+        - "'is already installed' not in msfonts_install.stderr"
+
+    - name: Rebuild font cache
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: fc-cache -v -f
+      register: font_cache
+      changed_when: "'done' in font_cache.stdout or 'rebuilt' in font_cache.stdout"
+
+    - name: Verify font installation
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: fc-list
+      register: font_list
+      changed_when: false
+
+    - name: Display fonts installation status
+      ansible.builtin.debug:
+        msg: "Fonts have been installed and font cache rebuilt"
+      notify: Fonts installed

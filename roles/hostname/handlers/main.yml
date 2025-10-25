@@ -1,0 +1,5 @@
+---
+- name: Hostname configured
+  ansible.builtin.debug:
+    msg: "System hostname has been configured to {{ hostname }}"
+  listen: "Hostname configured"

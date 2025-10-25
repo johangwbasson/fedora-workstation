@@ -1,5 +1,7 @@
 ---
 - name: Configure Git
+  tags:
+    - git
   block:
     - name: Ensure git is installed
       ansible.builtin.dnf:
@@ -13,12 +15,12 @@
         owner: "{{ username }}"
         group: "{{ username }}"
         mode: '0644'
-      notify: git config deployed
+      notify: Git config deployed
 
     - name: Verify git configuration
-      ansible.builtin.command:
-        cmd: git config --global user.name
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: git config user.name
       register: git_config_check
       changed_when: false
-  tags:
-    - git
+      become_user: "{{ username }}"
+      become: true

@@ -1,0 +1,26 @@
+---
+- name: Configure System Hostname
+  tags:
+    - hostname
+  block:
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ hostname }}"
+      notify: Hostname configured
+
+    - name: Update /etc/hosts with new hostname
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1\s+localhost'
+        line: "127.0.0.1   localhost {{ hostname }}"
+        state: present
+
+    - name: Verify hostname configuration
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: hostname
+      register: current_hostname
+      changed_when: false
+
+    - name: Display configured hostname
+      ansible.builtin.debug:
+        msg: "System hostname is set to: {{ current_hostname.stdout }}"

@@ -1,0 +1,5 @@
+---
+- name: Flatpak configured
+  ansible.builtin.debug:
+    msg: "Flatpak configured with Flathub repository"
+  listen: "Flatpak configured"

@@ -3,5 +3,5 @@
 # These values should be overridden in .vars.yml
 git_name: "{{ undef(hint='git_name must be set in .vars.yml') }}"
 git_email: "{{ undef(hint='git_email must be set in .vars.yml') }}"
-username: "{{ undef(hint='username must be set in .vars.yml') }}"
-user_home: "/home/{{ username }}"
+username: "{{ undef(hint='username must be set in .vars.yml') }}"  # noqa: var-naming[no-role-prefix]
+user_home: "/home/{{ username }}"  # noqa: var-naming[no-role-prefix]

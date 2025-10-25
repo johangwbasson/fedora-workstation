@@ -1,0 +1,10 @@
+---
+- name: Docker service reloaded
+  ansible.builtin.debug:
+    msg: "Docker service has been started and enabled"
+  listen: "Docker service reloaded"
+
+- name: User added to docker group
+  ansible.builtin.debug:
+    msg: "User {{ username }} has been added to the docker group"
+  listen: "User added to docker group"

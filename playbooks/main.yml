@@ -1,8 +1,8 @@
 ---
 - name: Provision Fedora 42 KDE Machine
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "{{ playbook_dir }}/../.vars.yml"
 
@@ -11,6 +11,42 @@
       tags:
         - base
 
+    - role: clitools
+      tags:
+        - clitools
+
+    - role: fonts
+      tags:
+        - fonts
+
+    - role: hostname
+      tags:
+        - hostname
+
     - role: git
       tags:
         - git
+
+    - role: docker
+      tags:
+        - docker
+
+    - role: flatpak
+      tags:
+        - flatpak
+
+    - role: bitwarden
+      tags:
+        - bitwarden
+
+    - role: brave
+      tags:
+        - brave
+
+    - role: chrome
+      tags:
+        - chrome
+
+    - role: chromium
+      tags:
+        - chromium

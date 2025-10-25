@@ -1,0 +1,24 @@
+---
+- name: Install Chromium Browser from Flathub
+  tags:
+    - chromium
+  block:
+    - name: Install chromium flatpak
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak install --noninteractive flathub org.chromium.Chromium
+      register: chromium_install
+      changed_when: "'already installed' not in chromium_install.stderr"
+      failed_when:
+        - chromium_install.rc != 0
+        - "'already installed' not in chromium_install.stderr"
+
+    - name: Verify chromium installation
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak list --app
+      register: flatpak_list
+      changed_when: false
+
+    - name: Display chromium installation status
+      ansible.builtin.debug:
+        msg: "Chromium Browser has been installed from Flathub"
+      notify: Chromium installed

@@ -1,0 +1,3 @@
+---
+# Hostname role defaults
+hostname: "{{ undef(hint='hostname must be set in .vars.yml') }}"  # noqa: var-naming[no-role-prefix]

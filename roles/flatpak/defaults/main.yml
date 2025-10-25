@@ -1,0 +1,3 @@
+---
+# Flatpak role defaults
+flatpak_enable_flathub: true

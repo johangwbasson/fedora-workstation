@@ -1,0 +1,3 @@
+---
+# Bitwarden role defaults
+bitwarden_flatpak_id: com.bitwarden.desktop

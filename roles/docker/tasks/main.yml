@@ -1,0 +1,45 @@
+---
+- name: Install and Configure Docker
+  tags:
+    - docker
+  block:
+    - name: Install docker package
+      ansible.builtin.dnf:
+        name: docker
+        state: present
+
+    - name: Start and enable docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+        daemon_reload: true
+      notify: Docker service reloaded
+
+    - name: Ensure docker group exists
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ username }}"
+        groups: docker
+        append: true
+      notify: User added to docker group
+
+    - name: Enable docker socket
+      ansible.builtin.systemd:
+        name: docker.socket
+        state: started
+        enabled: true
+
+    - name: Verify docker installation
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Display docker version
+      ansible.builtin.debug:
+        msg: "Docker installed: {{ docker_version.stdout }}"

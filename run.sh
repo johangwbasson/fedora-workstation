@@ -37,6 +37,6 @@ ansible-playbook -i inventory.ini playbooks/main.yml --syntax-check
 
 # Run the playbook
 echo "Executing provisioning playbook..."
-ansible-playbook -i inventory.ini playbooks/main.yml -v
+ansible-playbook -i inventory.ini playbooks/main.yml -v --ask-become-pass
 
 echo "=== Provisioning complete ==="

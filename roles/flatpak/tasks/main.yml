@@ -1,0 +1,30 @@
+---
+- name: Configure Flatpak
+  tags:
+    - flatpak
+  block:
+    - name: Install flatpak package
+      ansible.builtin.dnf:
+        name: flatpak
+        state: present
+
+    - name: Add flathub repository
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+      register: flatpak_add_flathub
+      changed_when: "'was already added' not in flatpak_add_flathub.stderr"
+
+    - name: Remove fedora flatpak repository
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak remote-delete fedora
+      register: flatpak_remove_fedora
+      changed_when: true
+      failed_when:
+        - flatpak_remove_fedora.rc != 0
+        - "'does not exist' not in flatpak_remove_fedora.stderr"
+
+    - name: Update flatpak remotes
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak remote-ls --app
+      register: flatpak_remote_list
+      changed_when: false

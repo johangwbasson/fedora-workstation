@@ -1,0 +1,5 @@
+---
+- name: CLI tools installed
+  ansible.builtin.debug:
+    msg: "Command line tools have been installed from repositories"
+  listen: "CLI tools installed"

@@ -1,5 +1,5 @@
 ---
-- name: git config deployed
+- name: Git config deployed
   ansible.builtin.debug:
     msg: "Git configuration deployed to {{ user_home }}/.gitconfig"
-  listen: "git config deployed"
+  listen: "Git config deployed"

@@ -1,0 +1,3 @@
+---
+# Fonts role defaults
+fonts_dir: /usr/share/fonts/opentype

@@ -1,0 +1,4 @@
+---
+# Docker role defaults
+username: "{{ undef(hint='username must be set in .vars.yml') }}"  # noqa: var-naming[no-role-prefix]
+docker_group: docker

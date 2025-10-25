@@ -1,0 +1,5 @@
+---
+- name: Brave installed
+  ansible.builtin.debug:
+    msg: "Brave Browser has been installed from Flathub"
+  listen: "Brave installed"

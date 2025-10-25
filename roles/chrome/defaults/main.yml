@@ -1,0 +1,3 @@
+---
+# Google Chrome Browser role defaults
+chrome_flatpak_id: com.google.Chrome

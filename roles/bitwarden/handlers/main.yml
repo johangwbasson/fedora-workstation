@@ -1,0 +1,5 @@
+---
+- name: Bitwarden installed
+  ansible.builtin.debug:
+    msg: "Bitwarden password manager has been installed from Flathub"
+  listen: "Bitwarden installed"

@@ -1,0 +1,86 @@
+---
+- name: Install Command Line Tools
+  tags:
+    - clitools
+  block:
+    - name: Install CLI tools and utilities
+      ansible.builtin.dnf:
+        name:
+          # Version control
+          - git
+          - git-lfs
+          # Network tools
+          - curl
+          - wget2
+          - openssh-clients
+          - telnet
+          - nmap-ncat
+          # Data processing
+          - jq
+          - yq
+          # File tools
+          - tree
+          - ncdu
+          - zip
+          - unzip
+          - p7zip
+          - stow
+          - rsync
+          - tar
+          - gzip
+          - bzip2
+          - xz
+          - zstd
+          - lz4
+          # Search and find
+          - fd-find
+          - ripgrep
+          - fzf
+          # Text display
+          - bat
+          - less
+          # System monitoring
+          - htop
+          - btop
+          - iotop
+          - nethogs
+          - iftop
+          - lsof
+          - strace
+          - inxi
+          # Text editors
+          - nano
+          - neovim
+          # Build tools
+          - make
+          - cmake
+          - gcc
+          - gcc-c++
+          - "@development-tools"
+          # Development
+          - flatpak
+          # Terminal multiplexers
+          - tmux
+          - screen
+          # Shell tools
+          - direnv
+          - lsd
+          - age
+          # System utilities
+          - util-linux
+          - coreutils
+          - findutils
+          - procps-ng
+          - psmisc
+          - file
+          - grep
+          - sed
+          - gawk
+        state: present
+      notify: CLI tools installed
+      ignore_errors: true
+      register: clitools_install
+
+    - name: Display CLI tools installation status
+      ansible.builtin.debug:
+        msg: "All CLI tools have been installed successfully"

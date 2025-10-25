@@ -1,0 +1,5 @@
+---
+- name: Chrome installed
+  ansible.builtin.debug:
+    msg: "Google Chrome Browser has been installed from Flathub"
+  listen: "Chrome installed"

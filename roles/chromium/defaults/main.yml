@@ -1,0 +1,3 @@
+---
+# Chromium Browser role defaults
+chromium_flatpak_id: org.chromium.Chromium

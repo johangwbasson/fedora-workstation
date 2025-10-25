@@ -1,5 +1,5 @@
 ---
-- name: refresh dnf cache
+- name: Refresh dnf cache
   ansible.builtin.dnf:
-    update_cache: yes
-  listen: "refresh dnf cache"
+    update_cache: true
+  listen: "Refresh dnf cache"

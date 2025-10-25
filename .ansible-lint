@@ -7,15 +7,9 @@ exclude_paths:
   - .github
   - node_modules
 
-# Rules to follow
-rules:
-  fqcn-builtins:
-    # Use fully qualified collection names for all builtins
-    enabled: true
-  var-naming:
-    # Variable naming conventions
-    enabled: true
-    pattern: '^[a-z_][a-z0-9_]*$'
+# Rules to skip (commented rules are enabled by default)
+# skip_list:
+#   - line-too-long
 
 # Verbosity level
 verbosity: 1

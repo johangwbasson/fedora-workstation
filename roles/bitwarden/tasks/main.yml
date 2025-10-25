@@ -1,0 +1,24 @@
+---
+- name: Install Bitwarden from Flathub
+  tags:
+    - bitwarden
+  block:
+    - name: Install bitwarden flatpak
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak install --noninteractive flathub com.bitwarden.desktop
+      register: bitwarden_install
+      changed_when: "'already installed' not in bitwarden_install.stderr"
+      failed_when:
+        - bitwarden_install.rc != 0
+        - "'already installed' not in bitwarden_install.stderr"
+
+    - name: Verify bitwarden installation
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak list --app
+      register: flatpak_list
+      changed_when: false
+
+    - name: Display bitwarden installation status
+      ansible.builtin.debug:
+        msg: "Bitwarden has been installed from Flathub"
+      notify: Bitwarden installed

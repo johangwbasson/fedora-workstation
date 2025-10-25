@@ -1,0 +1,24 @@
+---
+- name: Install Brave Browser from Flathub
+  tags:
+    - brave
+  block:
+    - name: Install brave flatpak
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak install --noninteractive flathub com.brave.Browser
+      register: brave_install
+      changed_when: "'already installed' not in brave_install.stderr"
+      failed_when:
+        - brave_install.rc != 0
+        - "'already installed' not in brave_install.stderr"
+
+    - name: Verify brave installation
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: flatpak list --app
+      register: flatpak_list
+      changed_when: false
+
+    - name: Display brave installation status
+      ansible.builtin.debug:
+        msg: "Brave Browser has been installed from Flathub"
+      notify: Brave installed

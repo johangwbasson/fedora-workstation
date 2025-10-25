@@ -1,0 +1,19 @@
+---
+# CLI Tools role defaults
+clitools_packages:
+  - git
+  - git-lfs
+  - curl
+  - wget
+  - jq
+  - yq
+  - tree
+  - ncdu
+  - zip
+  - unzip
+  - htop
+  - btop
+  - nano
+  - neovim
+  - tmux
+  - screen

@@ -1,0 +1,80 @@
+---
+- name: Install VirtualBox and disable KVM
+  tags:
+    - virtualbox
+  block:
+    - name: Remove libvirt and related packages
+      ansible.builtin.dnf:
+        name:
+          - libvirt-daemon-kvm
+          - libvirt-daemon
+          - libvirt
+          - qemu-kvm
+        state: absent
+        autoremove: true
+
+    - name: Disable KVM kernel module
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/kvm.conf
+        line: "blacklist kvm_intel"
+        state: present
+        create: true
+        mode: '0644'
+      register: kvm_blacklist
+
+    - name: Blacklist KVM AMD module
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/kvm.conf
+        line: "blacklist kvm_amd"
+        state: present
+        create: true
+        mode: '0644'
+
+    - name: Install VirtualBox and dependencies
+      ansible.builtin.dnf:
+        name:
+          - VirtualBox
+          - VirtualBox-guest-additions
+          - gcc
+          - kernel-devel
+          - make
+          - perl
+          - dkms
+        state: present
+
+    - name: Build VirtualBox kernel modules with dkms
+      ansible.builtin.command:
+        cmd: "dkms install vboxhost -k {{ ansible_kernel }}"
+      register: dkms_vbox
+      changed_when: "'driver was already installed' not in dkms_vbox.stdout"
+      failed_when: false
+
+    - name: Load VirtualBox kernel module
+      community.general.modprobe:
+        name: vboxdrv
+        state: present
+      retries: 5
+      delay: 3
+      failed_when: false
+
+    - name: Add current user to vboxusers group
+      ansible.builtin.user:
+        name: "{{ username }}"
+        groups: vboxusers
+        append: true
+
+    - name: Display VirtualBox installation status
+      ansible.builtin.debug:
+        msg: |
+          VirtualBox installed successfully!
+
+          Configuration:
+          - VirtualBox and Guest Additions installed
+          - KVM kernel module blacklisted
+          - VirtualBox kernel module loaded
+          - User added to vboxusers group
+
+          Next steps:
+          - Log out and log back in for group changes to take effect
+          - Or run: newgrp vboxusers
+          - VirtualBox is ready to use

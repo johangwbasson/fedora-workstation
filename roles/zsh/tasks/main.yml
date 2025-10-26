@@ -10,6 +10,11 @@
           - git
         state: present
 
+    - name: Check if Oh My Zsh is installed
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.oh-my-zsh
+      register: omz_installed
+
     - name: Install Oh My Zsh - Try curl method
       ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
         cmd: |
@@ -20,9 +25,12 @@
           else
             echo "already_exists"
           fi
+      become: true
+      become_user: "{{ username }}"
       register: shell_omz_install
       changed_when: "'installed' in shell_omz_install.stdout"
       failed_when: false
+      when: not omz_installed.stat.exists
 
     - name: Install Oh My Zsh - Fallback git method
       ansible.builtin.git:  # noqa: latest
@@ -33,17 +41,17 @@
       become: true
       become_user: "{{ username }}"
       register: omz_git_clone
-      when: shell_omz_install.rc | default(1) != 0 and not omz_installed.stat.exists
-
-    - name: Check if Oh My Zsh is installed
-      ansible.builtin.stat:
-        path: /home/{{ username }}/.oh-my-zsh
-      register: omz_installed
+      when: shell_omz_install is failed or shell_omz_install is skipped
 
     - name: Check if .zshrc exists
       ansible.builtin.stat:
         path: /home/{{ username }}/.zshrc
       register: zshrc_exists
+
+    - name: Re-check if Oh My Zsh is installed after install attempts
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.oh-my-zsh
+      register: omz_installed_after
 
     - name: Create basic .zshrc if it doesn't exist
       ansible.builtin.copy:
@@ -73,7 +81,7 @@
         mode: '0644'
       become: true
       become_user: "{{ username }}"
-      when: not zshrc_exists.stat.exists and omz_installed.stat.exists
+      when: not zshrc_exists.stat.exists and omz_installed_after.stat.exists
       register: zshrc_created
 
     - name: Install Powerlevel10k theme
@@ -203,6 +211,16 @@
         - ""
         - "# Utility Aliases"
         - "alias lad=lazydocker"
+      become: true
+      become_user: "{{ username }}"
+
+    - name: Copy p10k.zsh configuration file
+      ansible.builtin.copy:
+        src: p10k.zsh
+        dest: /home/{{ username }}/.p10k.zsh
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0644'
       become: true
       become_user: "{{ username }}"
 

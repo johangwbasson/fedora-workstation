@@ -18,78 +18,84 @@
 
     - name: Check if fisher is installed
       ansible.builtin.stat:
-        path: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher_loader.fish
+        path: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/functions/fisher.fish
       register: fisher_installed
 
     - name: Install Fisher (plugin manager)
-      ansible.builtin.git:  # noqa: latest
-        repo: https://github.com/jorgebucaran/fisher.git
-        dest: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher
-        depth: 1
-        version: main
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+          if [ -f /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/functions/fisher.fish ]; then
+            echo "installed"
+          else
+            echo "failed"
+          fi
       become: true
       become_user: "{{ username }}"
-      register: fisher_git_clone
+      register: fisher_install
+      changed_when: "'installed' in fisher_install.stdout"
+      failed_when: "'failed' in fisher_install.stdout"
       when: not fisher_installed.stat.exists
 
-    - name: Create fisher loader in vendor_conf.d
-      ansible.builtin.file:
-        path: /home/{{ username }}/.local/share/fish/vendor_conf.d
-        state: directory
+    - name: Wait for fisher to be available
+      ansible.builtin.stat:
+        path: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/functions/fisher.fish
+      register: fisher_binary
+      until: fisher_binary.stat.exists
+      retries: 3
+      delay: 2
+
+    - name: Ensure Fisher functions are in fish_function_path
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.config/fish/config.fish
+        line: "set -gp fish_function_path $HOME/.local/share/fish/vendor_conf.d/fisher/functions"
+        state: present
+        create: true
         owner: "{{ username }}"
         group: "{{ username }}"
-        mode: '0755'
+        mode: '0644'
+        insertbefore: "^# Tide"
       become: true
       become_user: "{{ username }}"
-      when: not fisher_installed.stat.exists and fisher_git_clone is changed
 
-    - name: Create fisher loader script
-      ansible.builtin.copy:
-        content: |
-          # fisher loader
-          set -l fisher_path /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher
-          set -l fisher_bin_path $fisher_path/bin/fisher.fish
-          if test -f $fisher_bin_path
-            source $fisher_bin_path
-          end
-        dest: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher_loader.fish
+    - name: Install fisher plugins
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: fish -c "fisher install {{ item }}"
+        executable: /usr/bin/fish
+      become: true
+      become_user: "{{ username }}"
+      register: fisher_plugin_install
+      changed_when: "'installed' in fisher_plugin_install.stdout"
+      failed_when: false
+      loop:
+        - "edc/bass"
+        - "IlanCosman/tide"
+        - "jorgebucaran/nvm.fish"
+        - "reitzig/sdkman-for-fish"
+      when: fisher_binary.stat.exists
+
+    - name: Install latest Node.js LTS version with nvm
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: fish -c "nvm install lts"
+        executable: /usr/bin/fish
+      become: true
+      become_user: "{{ username }}"
+      register: nvm_lts_install
+      changed_when: "'Now using Node' in nvm_lts_install.stdout or 'Downloading' in nvm_lts_install.stdout"
+      failed_when: false
+      when: fisher_binary.stat.exists
+
+    - name: Set latest Node.js LTS as default with nvm
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.config/fish/config.fish
+        line: "set -Ux nvm_default_version lts"
+        state: present
+        create: true
         owner: "{{ username }}"
         group: "{{ username }}"
         mode: '0644'
       become: true
       become_user: "{{ username }}"
-      when: not fisher_installed.stat.exists and fisher_git_clone is changed
-
-    - name: Wait for fisher to be available
-      ansible.builtin.stat:
-        path: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher_loader.fish
-      register: fisher_binary
-      until: fisher_binary.stat.exists
-      retries: 3
-      delay: 2
-      when: not fisher_installed.stat.exists
-
-    - name: Install bass plugin with fisher
-      ansible.builtin.shell:  # noqa: command-instead-of-shell
-        cmd: fish -c "/home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/bin/fisher.fish install edc/bass"
-        executable: /usr/bin/fish
-      become: true
-      become_user: "{{ username }}"
-      register: bass_plugin_install
-      changed_when: "'installed' in bass_plugin_install.stdout"
-      failed_when: false
-      when: fisher_git_clone is changed or fisher_installed.stat.exists
-
-    - name: Install tide prompt plugin with fisher
-      ansible.builtin.shell:  # noqa: command-instead-of-shell
-        cmd: fish -c "/home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/bin/fisher.fish install IlanCosman/tide"
-        executable: /usr/bin/fish
-      become: true
-      become_user: "{{ username }}"
-      register: tide_plugin_install
-      changed_when: "'installed' in tide_plugin_install.stdout"
-      failed_when: false
-      when: fisher_git_clone is changed or fisher_installed.stat.exists
 
     - name: Configure fish config.fish with Fisher plugins
       ansible.builtin.lineinfile:
@@ -104,6 +110,7 @@
         - "# Tide Prompt Configuration"
         - "set -g tide_prompt_icon_success '✔'"
         - "set -g tide_prompt_icon_failure '✘'"
+
 
     - name: Add cargo bin directory to PATH in fish config
       ansible.builtin.lineinfile:
@@ -186,6 +193,14 @@
           - Fisher plugin manager
           - Bass (bash compatibility)
           - Tide prompt
+          - NVM.fish (pure Fish Node Version Manager)
+          - SDKMan for Fish (SDK Manager wrapper)
+
+          Installed fisher plugins:
+          - edc/bass
+          - IlanCosman/tide
+          - jorgebucaran/nvm.fish
+          - reitzig/sdkman-for-fish
 
           To install additional plugins with fisher, run: fisher install <github-user>/<plugin-name>
           Current shell: /usr/bin/fish

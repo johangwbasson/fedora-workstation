@@ -1,0 +1,41 @@
+---
+- name: Install kubectl
+  tags:
+    - kubectl
+  block:
+    - name: Install dependencies
+      ansible.builtin.dnf:
+        name:
+          - curl
+          - jq
+        state: present
+
+    - name: Check if kubectl is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/kubectl
+      register: kubectl_binary
+
+    - name: Download kubectl binary
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          set -o pipefail
+          set -e
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "Failed to get latest version"
+            exit 1
+          fi
+
+          curl -sL "https://dl.k8s.io/release/v${LATEST_VERSION}/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl
+          chmod +x /usr/local/bin/kubectl
+          echo "installed"
+      register: kubectl_install
+      changed_when: "'installed' in kubectl_install.stdout"
+      when: not kubectl_binary.stat.exists
+
+    - name: Verify kubectl installation
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubectl version --client
+      register: kubectl_version
+      changed_when: false
+      ignore_errors: true

@@ -1,0 +1,38 @@
+---
+- name: Install Google Cloud CLI
+  tags:
+    - gcloud-cli
+  block:
+    - name: Check if Google Cloud repository is configured
+      ansible.builtin.stat:
+        path: /etc/yum.repos.d/google-cloud-sdk.repo
+      register: gcloud_repo_exists
+
+    - name: Add Google Cloud repository
+      ansible.builtin.copy:
+        content: |
+          [google-cloud-sdk]
+          name=Google Cloud SDK
+          baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el8-x86_64
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                 https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        dest: /etc/yum.repos.d/google-cloud-sdk.repo
+        owner: root
+        group: root
+        mode: '0644'
+      when: not gcloud_repo_exists.stat.exists
+
+    - name: Install Google Cloud CLI
+      ansible.builtin.dnf:
+        name: google-cloud-cli
+        state: present
+
+    - name: Verify Google Cloud CLI installation
+      ansible.builtin.command:
+        cmd: gcloud --version
+      register: gcloud_version
+      changed_when: false
+      ignore_errors: true

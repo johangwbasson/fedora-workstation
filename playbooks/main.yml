@@ -126,3 +126,27 @@
     - role: cleanbrowsing_dns
       tags:
         - cleanbrowsing_dns
+
+    - role: awscli
+      tags:
+        - awscli
+
+    - role: azurecli
+      tags:
+        - azurecli
+
+    - role: gcloudcli
+      tags:
+        - gcloudcli
+
+    - role: kubectl
+      tags:
+        - kubectl
+
+    - role: terraform
+      tags:
+        - terraform
+
+    - role: openjdk25
+      tags:
+        - openjdk-25

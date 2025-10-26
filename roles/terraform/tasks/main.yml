@@ -1,0 +1,44 @@
+---
+- name: Install Terraform
+  tags:
+    - terraform
+  block:
+    - name: Install dependencies
+      ansible.builtin.dnf:
+        name:
+          - curl
+          - unzip
+          - jq
+        state: present
+
+    - name: Check if Terraform is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/terraform
+      register: terraform_binary
+
+    - name: Download Terraform binary
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          set -o pipefail
+          set -e
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/hashicorp/terraform/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "Failed to get latest version"
+            exit 1
+          fi
+
+          curl -sL "https://releases.hashicorp.com/terraform/${LATEST_VERSION}/terraform_${LATEST_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
+          unzip -o -q /tmp/terraform.zip -d /usr/local/bin/
+          rm /tmp/terraform.zip
+          chmod +x /usr/local/bin/terraform
+          echo "installed"
+      register: terraform_install
+      changed_when: "'installed' in terraform_install.stdout"
+      when: not terraform_binary.stat.exists
+
+    - name: Verify Terraform installation
+      ansible.builtin.command:
+        cmd: /usr/local/bin/terraform version
+      register: terraform_version
+      changed_when: false
+      ignore_errors: true

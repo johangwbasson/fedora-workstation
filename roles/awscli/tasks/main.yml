@@ -1,0 +1,38 @@
+---
+- name: Install AWS CLI
+  tags:
+    - aws-cli
+  block:
+    - name: Install dependencies
+      ansible.builtin.dnf:
+        name:
+          - python3-pip
+          - curl
+        state: present
+
+    - name: Check if AWS CLI is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/aws
+      register: aws_cli_binary
+
+    - name: Install AWS CLI using pip
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: |
+          set -o pipefail
+          set -e
+          curl -sL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+          cd /tmp
+          unzip -q -o awscliv2.zip
+          ./aws/install --update
+          rm -rf /tmp/aws* /tmp/awscliv2.zip
+          echo "installed"
+      register: aws_install
+      changed_when: "'installed' in aws_install.stdout"
+      when: not aws_cli_binary.stat.exists
+
+    - name: Verify AWS CLI installation
+      ansible.builtin.command:
+        cmd: /usr/local/bin/aws --version
+      register: aws_version
+      changed_when: false
+      ignore_errors: true

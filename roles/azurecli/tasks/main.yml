@@ -1,0 +1,34 @@
+---
+- name: Install Azure CLI
+  tags:
+    - azure-cli
+  block:
+    - name: Install dependencies
+      ansible.builtin.dnf:
+        name:
+          - python3-pip
+          - gcc
+          - libffi-devel
+          - openssl-devel
+        state: present
+
+    - name: Check if Azure CLI is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/az
+      register: azure_cli_binary
+
+    - name: Install Azure CLI using pip
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: |
+          pip3 install azure-cli
+          echo "installed"
+      register: azure_install
+      changed_when: "'installed' in azure_install.stdout"
+      when: not azure_cli_binary.stat.exists
+
+    - name: Verify Azure CLI installation
+      ansible.builtin.command:
+        cmd: /usr/local/bin/az --version
+      register: azure_version
+      changed_when: false
+      ignore_errors: true

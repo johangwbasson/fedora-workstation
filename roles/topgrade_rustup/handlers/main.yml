@@ -1,0 +1,4 @@
+---
+- name: Topgrade and cargo-update installed
+  ansible.builtin.debug:
+    msg: "Topgrade and cargo-update have been installed successfully"

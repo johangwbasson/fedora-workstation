@@ -1,0 +1,5 @@
+---
+- name: Source cuda profile
+  ansible.builtin.command:  # noqa: command-instead-of-module
+    cmd: /bin/true
+  changed_when: false

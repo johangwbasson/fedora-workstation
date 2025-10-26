@@ -15,6 +15,10 @@
       tags:
         - clitools
 
+    - role: topgrade_rustup
+      tags:
+        - topgrade_rustup
+
     - role: fonts
       tags:
         - fonts
@@ -30,6 +34,10 @@
     - role: docker
       tags:
         - docker
+
+    - role: nvidia_cuda
+      tags:
+        - nvidia_cuda
 
     - role: flatpak
       tags:

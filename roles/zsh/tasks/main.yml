@@ -144,6 +144,15 @@
       become: true
       become_user: "{{ username }}"
 
+    - name: Add cargo bin directory to PATH in .zshrc
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.zshrc
+        line: 'export PATH="$HOME/.cargo/bin:$PATH"'
+        state: present
+        insertafter: 'source \$ZSH/oh-my-zsh.sh'
+      become: true
+      become_user: "{{ username }}"
+
     - name: Set zsh as default shell
       ansible.builtin.user:
         name: "{{ username }}"

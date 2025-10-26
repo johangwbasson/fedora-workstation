@@ -1,0 +1,69 @@
+---
+- name: Install Topgrade and Cargo Update via Rustup
+  tags:
+    - topgrade_rustup
+  block:
+    - name: Check if rustup is installed
+      ansible.builtin.command:
+        cmd: which rustup
+      register: rustup_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install rustup
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: set -o pipefail && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      environment:
+        HOME: "{{ topgrade_rustup_home }}"
+      register: rustup_install
+      changed_when: "'rustup has been successfully installed' in rustup_install.stdout"
+      when: rustup_check.rc != 0
+
+    - name: Update rustup
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: "{{ topgrade_rustup_home }}/.cargo/bin/rustup self update"
+      environment:
+        HOME: "{{ topgrade_rustup_home }}"
+      register: rustup_update
+      changed_when: "'rustup updated' in rustup_update.stdout or 'already installed' in rustup_update.stdout"
+      when: rustup_check.rc == 0
+
+    - name: Install topgrade via cargo
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: "{{ topgrade_rustup_home }}/.cargo/bin/cargo install --locked topgrade"
+      environment:
+        HOME: "{{ topgrade_rustup_home }}"
+      register: topgrade_install
+      changed_when: "'Finished' in topgrade_install.stdout or 'Installing topgrade' in topgrade_install.stdout"
+
+    - name: Install cargo-update via cargo
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: "{{ topgrade_rustup_home }}/.cargo/bin/cargo install --locked cargo-update"
+      environment:
+        HOME: "{{ topgrade_rustup_home }}"
+      register: cargo_update_install
+      changed_when: "'Finished' in cargo_update_install.stdout or 'Installing cargo-update' in cargo_update_install.stdout"
+
+    - name: Verify topgrade installation
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: "{{ topgrade_rustup_home }}/.cargo/bin/topgrade --version"
+      environment:
+        HOME: "{{ topgrade_rustup_home }}"
+      register: topgrade_version
+      changed_when: false
+
+    - name: Display topgrade version
+      ansible.builtin.debug:
+        msg: "Topgrade installed: {{ topgrade_version.stdout }}"
+
+    - name: Verify cargo-update installation
+      ansible.builtin.shell:  # noqa: command-instead-of-shell
+        cmd: "{{ topgrade_rustup_home }}/.cargo/bin/cargo-update --version"
+      environment:
+        HOME: "{{ topgrade_rustup_home }}"
+      register: cargo_update_version
+      changed_when: false
+
+    - name: Display cargo-update version
+      ansible.builtin.debug:
+        msg: "Cargo-update installed: {{ cargo_update_version.stdout }}"

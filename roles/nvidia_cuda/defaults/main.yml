@@ -1,0 +1,9 @@
+---
+# NVIDIA CUDA role defaults
+# Note: Fedora provides NVIDIA drivers through RPM Fusion
+# akmod-nvidia: Latest stable NVIDIA driver
+# akmod-nvidia-470xx: For older GPUs
+# akmod-nvidia-390xx: For legacy GPUs
+nvidia_cuda_driver_package: akmod-nvidia
+nvidia_cuda_packages:
+  - xorg-x11-drv-nvidia-cuda-libs

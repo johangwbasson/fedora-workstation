@@ -1,0 +1,66 @@
+---
+- name: Install NVIDIA Driver and CUDA
+  tags:
+    - nvidia_cuda
+  block:
+    - name: Install RPM Fusion free repository
+      ansible.builtin.dnf:
+        name: "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_version }}.noarch.rpm"
+        state: present
+        disable_gpg_check: false
+
+    - name: Install RPM Fusion nonfree repository
+      ansible.builtin.dnf:
+        name: "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_version }}.noarch.rpm"
+        state: present
+        disable_gpg_check: false
+
+    - name: Install NVIDIA GPU driver
+      ansible.builtin.dnf:
+        name: "{{ nvidia_cuda_driver_package }}"
+        state: present
+      register: nvidia_driver_install
+      failed_when: false
+
+    - name: Display driver installation status
+      ansible.builtin.debug:
+        msg: |
+          NVIDIA driver installation status:
+          - Return code: {{ nvidia_driver_install.rc }}
+          - Failures: {{ nvidia_driver_install.failures | default([]) }}
+          Note: akmod-nvidia requires kernel headers and akmods to be installed.
+      when: nvidia_driver_install.rc != 0
+
+    - name: Install NVIDIA CUDA libraries
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ nvidia_cuda_packages }}"
+      failed_when: false
+
+    - name: Create CUDA environment profile.d script
+      ansible.builtin.copy:
+        dest: /etc/profile.d/cuda.sh
+        content: |
+          #!/bin/bash
+          export PATH=/usr/local/cuda/bin:$PATH
+          export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+        mode: '0644'
+      notify: Source cuda profile
+
+    - name: Verify NVIDIA driver installation
+      ansible.builtin.command:  # noqa: command-instead-of-module
+        cmd: nvidia-smi
+      register: nvidia_smi_output
+      changed_when: false
+      failed_when: false
+
+    - name: Display NVIDIA driver version
+      ansible.builtin.debug:
+        msg: "NVIDIA driver installed: {{ nvidia_smi_output.stdout_lines[0] if nvidia_smi_output.stdout_lines else 'Not found' }}"
+      when: nvidia_smi_output.rc == 0
+
+    - name: Display nvidia-smi error
+      ansible.builtin.debug:
+        msg: "Warning: nvidia-smi not available ({{ nvidia_smi_output.stderr }})"
+      when: nvidia_smi_output.rc != 0

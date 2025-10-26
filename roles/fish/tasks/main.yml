@@ -105,6 +105,18 @@
         - "set -g tide_prompt_icon_success '✔'"
         - "set -g tide_prompt_icon_failure '✘'"
 
+    - name: Add cargo bin directory to PATH in fish config
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.config/fish/config.fish
+        line: "fish_add_path $HOME/.cargo/bin"
+        state: present
+        create: true
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0644'
+      become: true
+      become_user: "{{ username }}"
+
     - name: Set fish as default shell
       ansible.builtin.user:
         name: "{{ username }}"

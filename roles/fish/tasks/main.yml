@@ -21,36 +21,43 @@
         path: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher_loader.fish
       register: fisher_installed
 
-    - name: Install Fisher (plugin manager) - Try curl method
-      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe command-instead-of-module[curl]
-        cmd: curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/boot.fish | fish && fisher update
-        executable: /usr/bin/fish
-      become: true
-      become_user: "{{ username }}"
-      register: fisher_install
-      changed_when: "'fisher' in fisher_install.stderr or 'fisher' in fisher_install.stdout"
-      failed_when: false
-      when: not fisher_installed.stat.exists
-
-    - name: Install Fisher (plugin manager) - Fallback git method
+    - name: Install Fisher (plugin manager)
       ansible.builtin.git:  # noqa: latest
         repo: https://github.com/jorgebucaran/fisher.git
-        dest: /tmp/fisher
+        dest: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher
         depth: 1
         version: main
       become: true
       become_user: "{{ username }}"
       register: fisher_git_clone
-      when: not fisher_installed.stat.exists and fisher_install.rc | default(1) != 0
+      when: not fisher_installed.stat.exists
 
-    - name: Run Fisher installer script
-      ansible.builtin.shell:  # noqa: command-instead-of-shell
-        cmd: fish -c "source /tmp/fisher/boot.fish && fisher update"
-        executable: /usr/bin/fish
+    - name: Create fisher loader in vendor_conf.d
+      ansible.builtin.file:
+        path: /home/{{ username }}/.local/share/fish/vendor_conf.d
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0755'
       become: true
       become_user: "{{ username }}"
-      register: fisher_script_install
-      changed_when: "'fisher' in fisher_script_install.stderr or 'fisher' in fisher_script_install.stdout"
+      when: not fisher_installed.stat.exists and fisher_git_clone is changed
+
+    - name: Create fisher loader script
+      ansible.builtin.copy:
+        content: |
+          # fisher loader
+          set -l fisher_path /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher
+          set -l fisher_bin_path $fisher_path/bin/fisher.fish
+          if test -f $fisher_bin_path
+            source $fisher_bin_path
+          end
+        dest: /home/{{ username }}/.local/share/fish/vendor_conf.d/fisher_loader.fish
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0644'
+      become: true
+      become_user: "{{ username }}"
       when: not fisher_installed.stat.exists and fisher_git_clone is changed
 
     - name: Wait for fisher to be available
@@ -62,23 +69,27 @@
       delay: 2
       when: not fisher_installed.stat.exists
 
-    - name: Install nvm plugin with fisher
+    - name: Install bass plugin with fisher
       ansible.builtin.shell:  # noqa: command-instead-of-shell
-        cmd: /home/{{ username }}/.local/share/fish/vendor_functions.d/fisher install edc/bass
+        cmd: fish -c "/home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/bin/fisher.fish install edc/bass"
+        executable: /usr/bin/fish
       become: true
       become_user: "{{ username }}"
-      register: nvm_plugin_install
-      changed_when: "'installed' in nvm_plugin_install.stdout"
+      register: bass_plugin_install
+      changed_when: "'installed' in bass_plugin_install.stdout"
       failed_when: false
+      when: fisher_git_clone is changed or fisher_installed.stat.exists
 
     - name: Install tide prompt plugin with fisher
       ansible.builtin.shell:  # noqa: command-instead-of-shell
-        cmd: /home/{{ username }}/.local/share/fish/vendor_functions.d/fisher install IlanCosman/tide
+        cmd: fish -c "/home/{{ username }}/.local/share/fish/vendor_conf.d/fisher/bin/fisher.fish install IlanCosman/tide"
+        executable: /usr/bin/fish
       become: true
       become_user: "{{ username }}"
       register: tide_plugin_install
       changed_when: "'installed' in tide_plugin_install.stdout"
       failed_when: false
+      when: fisher_git_clone is changed or fisher_installed.stat.exists
 
     - name: Configure fish config.fish with Fisher plugins
       ansible.builtin.lineinfile:

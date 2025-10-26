@@ -3,48 +3,49 @@
   tags:
     - cleanbrowsing_dns
   block:
-    - name: Backup original resolv.conf
-      ansible.builtin.copy:
-        src: /etc/resolv.conf
-        dest: /etc/resolv.conf.bak
-        remote_src: true
-        mode: '0644'
-        backup: true
+    - name: Check if systemd-resolved is available
+      ansible.builtin.command:
+        cmd: systemctl is-enabled systemd-resolved
+      register: systemd_resolved_enabled
+      ignore_errors: true
+      changed_when: false
 
-    - name: Remove existing nameserver entries
-      ansible.builtin.lineinfile:
-        path: /etc/resolv.conf
-        regexp: '^nameserver'
-        state: absent
+    - name: Enable systemd-resolved service
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        enabled: true
+        state: started
+      when: systemd_resolved_enabled.rc != 0
 
-    - name: Add CleanBrowsing Adult Filter DNS servers
-      ansible.builtin.lineinfile:
-        path: /etc/resolv.conf
-        line: "{{ item }}"
-        state: present
-      loop:
-        - "nameserver 185.228.168.9"
-        - "nameserver 185.228.169.9"
-        - "nameserver 2a0d:2a00:1::1"
-        - "nameserver 2a0d:2a00:1::2"
-
-    - name: Check if resolv.conf is immutable
+    - name: Check if resolved.conf exists
       ansible.builtin.stat:
-        path: /etc/resolv.conf
-      register: resolv_stat
+        path: /etc/systemd/resolved.conf
+      register: resolved_conf_exists
 
-    - name: Make resolv.conf immutable
-      ansible.builtin.file:
-        path: /etc/resolv.conf
-        attributes: '+i'
-      when: not resolv_stat.stat.attributes | regex_search('i')
+    - name: Create resolved.conf if it doesn't exist
+      ansible.builtin.copy:
+        content: |
+          # This file is part of systemd.
+          # systemd is free software; you can redistribute it and/or modify it
+          # under the terms of the GNU Lesser General Public License as published by
+          # the Free Software Foundation; either version 2.1 of the License, or
+          # (at your option) any later version.
+          #
+          # Entries in this file show the compile time defaults (when
+          # relevant). You can change settings by editing this file.
+          # Defaults can be restored by simply deleting this file.
+          #
+          # See resolved.conf(5) for details
 
-    - name: Configure NetworkManager to use systemd-resolved
-      ansible.builtin.lineinfile:
-        path: /etc/NetworkManager/NetworkManager.conf
-        regexp: '^dns='
-        line: 'dns=systemd-resolved'
-        state: present
+          [Resolve]
+          # DNS servers for CleanBrowsing (Adult Filter)
+          DNS=185.228.168.9 185.228.169.9 2a0d:2a00:1::1 2a0d:2a00:1::2
+          FallbackDNS=1.1.1.1 1.0.0.1 2606:4700:4700::1111 2606:4700:4700::1001
+        dest: /etc/systemd/resolved.conf
+        owner: root
+        group: root
+        mode: '0644'
+      register: resolved_created
 
     - name: Configure systemd-resolved for CleanBrowsing
       ansible.builtin.lineinfile:
@@ -53,6 +54,7 @@
         line: 'DNS=185.228.168.9 185.228.169.9 2a0d:2a00:1::1 2a0d:2a00:1::2'
         state: present
       register: resolved_dns_update
+      when: not resolved_created.changed
 
     - name: Configure systemd-resolved FallbackDNS
       ansible.builtin.lineinfile:
@@ -61,13 +63,14 @@
         line: 'FallbackDNS=1.1.1.1 1.0.0.1 2606:4700:4700::1111 2606:4700:4700::1001'
         state: present
       register: resolved_fallback_update
+      when: not resolved_created.changed
 
     - name: Restart systemd-resolved service
       ansible.builtin.systemd:
         name: systemd-resolved
         state: restarted
         daemon_reload: true
-      when: resolved_dns_update.changed or resolved_fallback_update.changed
+      when: resolved_created.changed or resolved_dns_update.changed or resolved_fallback_update.changed
 
     - name: Display DNS configuration status
       ansible.builtin.debug:

@@ -3,9 +3,12 @@
   tags:
     - lazydocker
   block:
-    - name: Install curl (dependency)
+    - name: Install dependencies
       ansible.builtin.dnf:
-        name: curl
+        name:
+          - curl
+          - tar
+          - jq
         state: present
 
     - name: Check if lazydocker is already installed
@@ -13,11 +16,51 @@
         path: /home/{{ username }}/.local/bin/lazydocker
       register: lazydocker_binary
 
-    - name: Install lazydocker
-      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe command-instead-of-module[curl]
-        cmd: curl https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install.sh | bash
+    - name: Create .local/bin directory
+      ansible.builtin.file:
+        path: /home/{{ username }}/.local/bin
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0755'
+      become: true
+      become_user: "{{ username }}"
+      when: not lazydocker_binary.stat.exists
+
+    - name: Download lazydocker binary
+      ansible.builtin.shell:  # noqa: command-instead-of-shell risky-shell-pipe
+        cmd: |
+          set -o pipefail
+          set -e
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ]; then
+            ARCH="x86_64"
+          elif [ "$ARCH" = "aarch64" ]; then
+            ARCH="arm64"
+          fi
+
+          # Get latest release info from GitHub API
+          RELEASE_INFO=$(curl -s \
+            https://api.github.com/repos/jesseduffield/lazydocker/releases/latest)
+
+          # Extract the download URL for the appropriate architecture
+          DOWNLOAD_URL=$(echo "$RELEASE_INFO" | jq -r \
+            ".assets[] | select(.name | contains(\"Linux_${ARCH}.tar.gz\")) | \
+            .browser_download_url" | head -1)
+
+          if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
+            echo "Failed to find download URL"
+            exit 1
+          fi
+
+          curl -sL "$DOWNLOAD_URL" -o /tmp/lazydocker.tar.gz
+          tar -xzf /tmp/lazydocker.tar.gz -C /tmp/
+          mv /tmp/lazydocker /home/{{ username }}/.local/bin/lazydocker
+          chmod +x /home/{{ username }}/.local/bin/lazydocker
+          rm /tmp/lazydocker.tar.gz
+          echo "installed"
       become: true
       become_user: "{{ username }}"
       register: lazydocker_install
-      changed_when: lazydocker_install.rc == 0
+      changed_when: "'installed' in lazydocker_install.stdout"
       when: not lazydocker_binary.stat.exists

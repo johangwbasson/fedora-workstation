@@ -2,14 +2,11 @@
 	name = {{ git_name }}
 	email = {{ git_email }}
 
-[core]
-	editor = vim
-
-[init]
-	defaultBranch = main
-
-[color]
-	ui = auto
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
 
 [alias]
 	st = status
@@ -19,3 +16,47 @@
 	unstage = reset HEAD --
 	last = log -1 HEAD
 	visual = log --graph --oneline --all
+	his = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	slog = log --graph --all --topo-order --pretty='format:%h %ai %s%d (%an)'
+
+[init]
+	defaultBranch = main
+
+[core]
+	autocrlf = input
+	pager = delta --line-numbers --dark -s
+	editor = true
+
+[color]
+	ui = auto
+	diff = auto
+	status = auto
+	branch = auto
+
+[pull]
+	rebase = false
+
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	light = false
+	side-by-side = true
+	line-numbers = true
+	syntax-theme = Dracula
+	file-style = bold yellow ul
+	file-decoration-style = yellow box
+	hunk-header-style = file line-number syntax
+	plus-style = "syntax #283b4d"
+	plus-emph-style = "syntax #3b5a76"
+	minus-style = "syntax #3f2d3d"
+	minus-emph-style = "syntax #6f4b5e"
+	line-numbers-zero-style = "#4b5263"
+	line-numbers-minus-style = "#b04b57"
+	line-numbers-plus-style = "#266d6a"
+	zero-style = dim syntax

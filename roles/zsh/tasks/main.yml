@@ -153,6 +153,59 @@
       become: true
       become_user: "{{ username }}"
 
+    - name: Add aliases to .zshrc
+      ansible.builtin.lineinfile:
+        path: /home/{{ username }}/.zshrc
+        line: "{{ item }}"
+        state: present
+      loop:
+        - "# LS Aliases"
+        - "alias ls='lsd'"
+        - "alias l='ls -lha'"
+        - "alias la='ls -lhA'"
+        - "alias ll='ls -lAFh'"
+        - "alias lla='lsd -la'"
+        - "alias lsa='ls -lha'"
+        - "alias lt='lsd --tree'"
+        - ""
+        - "# General Aliases"
+        - "alias c=clear"
+        - ""
+        - "# Build Aliases"
+        - "alias mcb='mvn clean build'"
+        - "alias gcb='./gradlew clean build'"
+        - "alias m='make'"
+        - ""
+        - "# System Aliases"
+        - "alias tg='topgrade'"
+        - "alias dcu=\"docker-compose up\""
+        - ""
+        - "# Git Aliases"
+        - "alias gc=\"git commit\""
+        - "alias gs=\"git status\""
+        - "alias gp=\"git push\""
+        - "alias gl=\"git pull\""
+        - "alias gco=\"git checkout\""
+        - "alias gd=\"git diff\""
+        - "alias gb=\"git branch\""
+        - "alias ga=\"git add\""
+        - "alias glo=\"git log --oneline --decorate --color\""
+        - ""
+        - "# NPM Aliases"
+        - "alias ni=\"npm install\""
+        - "alias nid=\"npm install --save-dev\""
+        - "alias nig=\"npm install -g\""
+        - "alias nr=\"npm run\""
+        - "alias ns=\"npm start\""
+        - "alias nt=\"npm test\""
+        - "alias nb=\"npm run build\""
+        - "alias spot='./gradlew spotlessApply'"
+        - ""
+        - "# Utility Aliases"
+        - "alias lad=lazydocker"
+      become: true
+      become_user: "{{ username }}"
+
     - name: Set zsh as default shell
       ansible.builtin.user:
         name: "{{ username }}"
